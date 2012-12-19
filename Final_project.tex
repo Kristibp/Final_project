@@ -1,0 +1,115 @@
+\documentclass[11pt]{amsart}
+\usepackage{amssymb, amsmath}
+\usepackage{graphicx}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{prop}[theorem]{Proposition}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+
+\def\di{\partial}
+\def\bs{\backslash}
+\def\e{\epsilon}
+\def\a{\alpha}
+\def\w{\omega}
+\def\b{\beta}
+\def\y{\gamma}
+\def\t{\tau}
+\def\D{\nabla}
+\def\ot{\otimes}
+\def\eq{\Leftrightarrow}
+\def\l{\lambda}
+\def\r{\rho}
+\def\d{\Delta}
+\def\k{\kappa}
+\def\la{\langle}
+\def\ra{\rangle}
+\def\p{\phi}
+\def\O{\Omega}
+
+\author{Kristian Pedersen, kristian.berseth.pedersen@gmail.com}
+\begin{document}
+\title[INF5620]{INF5620: Final Project}
+
+\maketitle
+\section{Introduction}
+My solution of the final project in INF5620. It is somewhat rough on the edges as I have spent litteral days on bugfixing and need the remaining time to practice for the exam.
+\section{a.)}
+$$\r u_t = \D \cdot (\alpha (u) \D u) + f(\bar{x},t)$$
+Discretizing in time and using backward euler we get:
+$$\r \frac{u^k + u^{k-1}}{\d t} = \D \cdot (\alpha (u^k) \D u^k) + f(\bar{x},t^k)$$
+or, setting $\k = \frac{\r}{\d t}$, $u = u^k$ and $u_p = u^{k-1}$:
+$$u = u_p + \k( \D \cdot (\alpha (u) \D u) + f(\bar{x},t^k))$$
+Finding the variational form of the problem:
+$$\la u,v \ra = \la u_p,v \ra + \k(\la \D \cdot (\alpha (u) \D u),v \ra + \la f(\bar{x},t^k),v \ra)$$
+Sorting and applying Green's Identity along with the neumann condition:
+$$\la u_p,v \ra + \k \la f(\bar{x},t^k),v \ra) = \la u,v \ra + \k \la \D \cdot (\alpha (u) \D u),v \ra$$
+And we find 
+$$a = \la u,v \ra + \k \la \D \cdot (\alpha (u) \D u),v \ra$$
+$$L = \la u_p + \k f(\bar{x},t^k),v \ra)$$
+
+\section{b.)}
+Setting $u^q = u_p$ for q = 0 and iterating over q = 1,2,3 ... we get the following systems from picard iteration:
+$$- \la u_p,v \ra - \k \la f(\bar{x},t^k),v \ra)  + \la u^q,v \ra + \k \la \D \cdot (\alpha (u^{q-1}) \D u^q),v \ra = 0$$
+
+\section{c.)}
+Inserting for q = 1 and renaming $u^1$ to u we find:
+$$-\la u_p,v \ra - \k \la f(\bar{x},t^k),v \ra)  + \la u,v \ra + \k \la \D \cdot (\alpha (u_p) \D u),v \ra = 0$$
+The implementation of this can be found in the file dummy.py in the Solver class' Picard function.
+
+\section{d.)}
+Implemented the problem is implemented in the generate$\_$first$\_$verification(h) function in the Problem class of dummy.py and the convergance test is launched from the convergance$\_$test1 function in the Tester class. Here I would probably have changed the structure a bit and add a proper test (instead of just printings) if I hadn't been so short on time.
+
+\section{e.)}
+Implemented the problem in the generate$\_$first$\_$verification(h) function in the Problem class of Solver.py and a test running some T values is implemented in the manufactured$\_$test() function in the tester class. The error seems reasonably small, but not non-existant. It seems to scale with T, but that is not unreasonable considering the choice of error measure.
+\section{f.)}
+Some factors:
+\begin{enumerate}
+\item The error from discretization in time
+\item The error from the  assumption that the picard method will converge (A guess, but I think one can find some sufficiently ugly $\a(u)$s to make it true)
+\item The error from doing a finite amount (one) of picard iterations
+\item Error caused while interpolating I and other functions
+\item Error caused during FEniCS's solution process (Though I am unsure wether or not this is included in point 5 and 7 when FEniCS uses "exact" solvers for linear systems)
+\item Errors introduced by floating point arithmetic.
+\end{enumerate}
+\section{g.)}
+I postponed this and promptly forgot it :(
+\section{h.)}
+Implemented the problem in the generate$\_$gaussian(beta) function in the Problem class of Solver.py and a test running some $\beta$ values is implemented in the gaussian$\_$test() function in the tester class. I have not implemented a way to plot the solution as I am running low time and the answer is obviously wrong (for one it is invariant in beta). I have spent some time trying to locate the bug, but it is nowhere to be found.
+\section{i.)}
+The group finite method is based on the assumption:
+$$\a(u) = \a(\Sigma_{i=1}^n \p_i u_i) \approx \a(\Sigma_{i=1}^n u_i)\p_i$$
+Then for j = 1,2...n :
+$$\la \a(u), \p_j \ra = \la  \a(\Sigma_{i=1}^n \p_i u_i) , \p_j \ra \approx \la \a(\Sigma_{i=1}^n u_i)\p_i , \p_j \ra = \a(\Sigma_{i=1}^n u_i) \la \p_i , \p_j \ra$$
+As we're using P1 elements $\la \p_i , \p_j \ra = 0$ for $j \ne i, i+1 $ or $ i-1$. Using the standard P1 integrals from the compendium/slides we find:
+$$\la \a(u), \p_j \ra  \approx \frac{h}{6}(\alpha(u_{i-1} + \alpha(u_{i}) + \alpha(u_{i+1})$$
+
+\section{j.)}
+For i = 1,2..n we can define $F_i$ as:
+$$F_i = a(u,\p_i) - L(\p_j) = \int_\O (u - u_p)\p_i - \k a(u)\D u \cdot \D \p_i + f(\bar{x},t^k) dx = 0$$
+
+Defining the Jacobian as:
+
+$$J_{i,j} = \frac{\di F_i}{di u_j}$$
+
+We can use the fact that L and $\p_i$ is constant with respect to $u_j$ and apply the chain rule to the second term to get:
+$$J_{i,j} = \int_\O \frac{\di u}{\di u_j}\p_i + \k \frac{\di a(u)}{\di u_j}\D u \cdot \D \p_i + a(u) \D \frac{\di u }{\di u_j} \cdot \D \p_i dx$$
+Inserting the galerkin expansion of u: $u = \Sigma_{i=1}^n u_i)\p_i$ and noticing that the derivation will remove all the terms but the $u_j$ term we find:
+$$J_{i,j} = \int_\O \p_j \p_i + \k a'(u)\p_j \D u \cdot \D \p_i + a(u) \D \p_j \cdot \D \p_i dx$$
+Where we used the core rule to simplify the derivative of a(u)
+
+\section{k.)}
+Inserting for one dimension we get:
+$$J_{i,j} = \int_\O \p_j \p_i + \k a'(u)\p_j \frac{\di u}{\di x} \p_i '(x) + a(u) \p_j' \p_i' dx$$
+
+After several attempts to get the algebra right I have given up on the rest of this exercise. I tried using the simplicity of P1 integrals and collapsing sums when using trapezodial integration. The expression still seemed extremely complex. Maybe I've made a mistake in the above calculations?
+
+\section{l.)}
+I am assuming we would find that the expression from k to be similar to a finite element approximation, as often is the case when using P1 elements and the trapezodial rule. Hard to say which without the exact expression though.
+\end{document}
